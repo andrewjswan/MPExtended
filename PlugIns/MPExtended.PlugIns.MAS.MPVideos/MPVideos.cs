@@ -17,16 +17,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.ComponentModel.Composition;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using MPExtended.Libraries.Service;
 using MPExtended.Libraries.Service.Util;
-using MPExtended.Libraries.SQLitePlugin;
 using MPExtended.Services.Common.Interfaces;
 using MPExtended.Services.MediaAccessService.Interfaces;
 using MPExtended.Services.MediaAccessService.Interfaces.Movie;
+using MPExtended.Libraries.SQLitePlugin;
 
 namespace MPExtended.PlugIns.MAS.MPVideos
 {
@@ -36,12 +37,31 @@ namespace MPExtended.PlugIns.MAS.MPVideos
     public class MPVideos : Database, IMovieLibrary
     {
         public bool Supported { get; set; }
+        private videodatabaseEntities _connection;
 
         [ImportingConstructor]
         public MPVideos(IPluginData data)
         {
-            DatabasePath = data.GetConfiguration("MP MyVideo")["database"];
-            Supported = File.Exists(DatabasePath);
+          ConnectDb();
+        }
+
+        private void ConnectDb()
+        {
+          try
+          {
+            string ConnectionString = string.Format(
+              "metadata=res://*/Model1.csdl|res://*/Model1.ssdl|res://*/Model1.msl;provider=MySql.Data.MySqlClient;provider connection string=\"server={0};user id={1};password={2};persistsecurityinfo=True;database=videodatabase;Convert Zero Datetime=True;charset=utf8\"",
+              "localhost", "root", "MediaPortal");
+
+            _connection = new videodatabaseEntities(ConnectionString);
+
+            Supported = true;
+          }
+          catch (Exception ex)
+          {
+            Log.Error("Videodatabase:ConnectDb exception err:{0} stack:{1} {2}", ex.Message, ex.StackTrace, ex.InnerException);
+            Supported = false;
+          }
         }
 
         private List<WebActor> ActorReader(SQLiteDataReader reader, int idx)
@@ -97,31 +117,165 @@ namespace MPExtended.PlugIns.MAS.MPVideos
 
         public IEnumerable<WebMovieBasic> GetAllMovies()
         {
-            return LoadMovies<WebMovieBasic>();
+          string sql = "SELECT * FROM movieinfo";
+
+          var query = _connection.ExecuteStoreQuery<movieinfo>(sql).ToList();
+          var result = new List<WebMovieBasic>();
+
+          foreach (movieinfo item in query)
+          {
+            WebMovieBasic a = new WebMovieBasic();
+            a.Id = item.idMovie.ToString();
+
+            sql = "SELECT CONCAT(p.strPath, f.strFilename) AS fullpath FROM files f, path p where p.idPath = f.idPath and f.idMovie = " + item.idMovie.ToString();
+            var query2 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+            a.Path = query2;
+
+            sql = "SELECT strActor FROM actorlinkmovie alm, actors a where alm.idActor = a.idActor and alm.idMovie =" + item.idMovie.ToString();
+            var query3 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+            var actr = new List<WebActor>();
+
+            foreach (WebActor item2 in query3)
+            {
+              WebActor a2 = new WebActor();
+              a2.Title = item.strGenre;
+              actr.Add(a2);
+            }
+            a.Actors = actr;
+
+            sql = "SELECT strGenre FROM genrelinkmovie glm, genre g where glm.idGenre = g.idGenre and glm.idMovie =" + item.idMovie.ToString();
+            var query4 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+            a.Genres = query4;
+
+            a.Title = item.strTitle;
+            a.DateAdded = item.dateAdded;
+            result.Add(a);
+          }
+          return result;
         }
 
         public IEnumerable<WebMovieDetailed> GetAllMoviesDetailed()
         {
-            return LoadMovies<WebMovieDetailed>();
+          string sql = "SELECT * FROM movieinfo";
+
+          var query = _connection.ExecuteStoreQuery<movieinfo>(sql).ToList();
+          var result = new List<WebMovieDetailed>();
+
+          foreach (movieinfo item in query)
+          {
+            WebMovieDetailed a = new WebMovieDetailed();
+            a.Id = item.idMovie.ToString();
+
+            sql = "SELECT CONCAT(p.strPath, f.strFilename) AS fullpath FROM files f, path p where p.idPath = f.idPath and f.idMovie = " + item.idMovie.ToString();
+            var query2 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+            a.Path = query2;
+            a.Title = item.strTitle;
+            a.Year = (int)item.iYear;
+            a.Runtime = (int)item.runtime;
+            a.Summary = item.strPlot;
+            a.Watched = Convert.ToBoolean(item.iswatched);
+
+            sql = "SELECT strActor FROM actorlinkmovie alm, actors a where alm.idActor = a.idActor and alm.idMovie =" + item.idMovie.ToString();
+            var query3 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+            var actr = new List<WebActor>();
+
+            foreach (WebActor item2 in query3)
+            {
+              WebActor a2 = new WebActor();
+              a2.Title = item2;
+              actr.Add(a2);
+            }
+            a.Actors = actr;
+
+            sql = "SELECT strGenre FROM genrelinkmovie glm, genre g where glm.idGenre = g.idGenre and glm.idMovie =" + item.idMovie.ToString();
+            var query4 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+            a.Genres = query4;
+
+            a.Rating = float.Parse(item.fRating, CultureInfo.InvariantCulture.NumberFormat);
+            a.Writers = (item.strCredits).Split('/').Select(x => x.Trim()).ToList();
+            a.DateAdded = item.dateAdded;
+
+            result.Add(a);
+          }
+          return result;
         }
 
         public WebMovieBasic GetMovieBasicById(string movieId)
         {
-            return LoadMovies<WebMovieBasic>().Where(x => x.Id == movieId).First();
+          string sql = "SELECT * FROM movieinfo where idMovie = '" + movieId + "'";
+
+          var query = _connection.ExecuteStoreQuery<movieinfo>(sql).FirstOrDefault();
+
+          WebMovieBasic result = new WebMovieBasic();
+          result.Id = query.idMovie.ToString();
+
+          sql = "SELECT CONCAT(p.strPath, f.strFilename) AS fullpath FROM files f, path p where p.idPath = f.idPath and f.idMovie = " + movieId;
+          var query2 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+          result.Path = query2;
+          result.Title = query.strTitle;
+          result.Rating = float.Parse(query.fRating, CultureInfo.InvariantCulture.NumberFormat);
+
+          return result;
         }
 
         public WebMovieDetailed GetMovieDetailedById(string movieId)
         {
-            return LoadMovies<WebMovieDetailed>().Where(x => x.Id == movieId).First();
+          string sql = "SELECT * FROM movieinfo where idMovie = '" + movieId + "'";
+
+          var query = _connection.ExecuteStoreQuery<movieinfo>(sql).FirstOrDefault();
+
+          WebMovieDetailed result = new WebMovieDetailed();
+          result.Id = query.idMovie.ToString();
+
+          sql = "SELECT CONCAT(p.strPath, f.strFilename) AS fullpath FROM files f, path p where p.idPath = f.idPath and f.idMovie = " + movieId;
+          var query2 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+          result.Path = query2;
+          result.Title = query.strTitle;
+          result.Year = (int)query.iYear;
+          result.Runtime = (int)query.runtime;
+          result.Summary = query.strPlot;
+          result.Watched = Convert.ToBoolean(query.iswatched);
+          result.Summary = query.strPlot;
+          result.Title = query.strTitle;
+
+          sql = "SELECT strActor FROM actorlinkmovie alm, actors a where alm.idActor = a.idActor and alm.idMovie =" + movieId;
+          var query3 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+          var actr = new List<WebActor>();
+
+          foreach (WebActor item2 in query3)
+          {
+            WebActor a2 = new WebActor();
+            a2.Title = item2;
+            actr.Add(a2);
+          }
+          result.Actors = actr;
+
+          sql = "SELECT strGenre FROM genrelinkmovie glm, genre g where glm.idGenre = g.idGenre and glm.idMovie =" + movieId;
+          var query4 = _connection.ExecuteStoreQuery<string>(sql).ToList();
+          result.Genres = query4;
+
+          result.Rating = float.Parse(query.fRating, CultureInfo.InvariantCulture.NumberFormat);
+          result.Writers = (query.strCredits).Split('/').Select(x => x.Trim()).ToList();
+          result.DateAdded = query.dateAdded;
+        
+          return result;
         }
 
         public IEnumerable<WebGenre> GetAllGenres()
         {
-            string sql = "SELECT strGenre FROM genre";
-            return new LazyQuery<WebGenre>(this, sql, new List<SQLFieldMapping>()
-            {
-                new SQLFieldMapping("strGenre", "Title", DataReaders.ReadString)
-            });
+          string sql = "SELECT * FROM genre";
+
+          var query = _connection.ExecuteStoreQuery<genre>(sql).ToList();
+
+          var result = new List<WebGenre>();
+
+          foreach (genre item in query)
+          {
+            WebGenre a = new WebGenre();
+            a.Title = item.strGenre;
+            result.Add(a);
+          }
+          return result;
         }
 
         public IEnumerable<WebCategory> GetAllCategories()
