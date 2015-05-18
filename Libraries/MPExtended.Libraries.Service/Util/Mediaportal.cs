@@ -148,7 +148,7 @@ namespace MPExtended.Libraries.Service.Util
 
         public static string GetConfigFilePath()
         {
-            string location = GetLocation(MediaportalDirectory.Config);
+          string location = "c:\\ProgramData\\Team MediaPortal\\MediaPortal\\"; //GetLocation(MediaportalDirectory.Config);
             if (location == null)
             {
                 return null;
