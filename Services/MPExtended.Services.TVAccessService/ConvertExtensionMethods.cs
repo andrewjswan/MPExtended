@@ -260,6 +260,7 @@ namespace MPExtended.Services.TVAccessService
                 Id = group.IdGroup,
                 IsChanged = group.IsChanged,
                 SortOrder = group.SortOrder,
+                PinCode = group.PinCode,
                 IsRadio = false,
                 IsTv = true
             };

@@ -428,7 +428,7 @@ namespace MPExtended.Services.TVAccessService
                             _tvControl.OnNewSchedule();
                             break;
                         default:
-                            CanceledSchedule canceledSchedule = new CanceledSchedule(schedule.IdSchedule, schedule.IdChannel, schedule.StartTime);
+                            CanceledSchedule canceledSchedule = new CanceledSchedule(schedule.IdSchedule, schedule.IdChannel, program.StartTime);
                             canceledSchedule.Persist();
                             _tvControl.OnNewSchedule();
                             break;
@@ -879,6 +879,17 @@ namespace MPExtended.Services.TVAccessService
                 WCFUtil.SetResponseCode(System.Net.HttpStatusCode.InternalServerError);
                 return Stream.Null;
             }
+        }
+
+        public WebBoolResult DeleteRecording(int id)
+        {
+          Boolean result = false;
+
+          result = _tvControl.DeleteRecording(id);
+
+          Log.Info("Deleted recording {0}", id);
+
+          return result;
         }
         #endregion
 

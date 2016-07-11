@@ -143,6 +143,10 @@ namespace MPExtended.Services.TVAccessService.Interfaces
         [OperationContract]
         [WebGet(ResponseFormat = WebMessageFormat.Json)]
         Stream ReadRecordingFile(int id);
+
+        [OperationContract]
+        [WebGet(ResponseFormat = WebMessageFormat.Json)]
+        WebBoolResult DeleteRecording(int id);
         #endregion
 
         #region Channels

@@ -13,5 +13,6 @@ namespace MPExtended.Services.TVAccessService.Interfaces
         public int SortOrder { get; set; }
         public bool IsRadio { get; set; }
         public bool IsTv { get; set; }
+        public string PinCode { get; set; }
     }
 }
