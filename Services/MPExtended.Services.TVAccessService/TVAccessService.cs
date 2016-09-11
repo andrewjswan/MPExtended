@@ -955,12 +955,12 @@ namespace MPExtended.Services.TVAccessService
 
         public IList<WebProgramDetailed> SearchProgramsDetailed(string searchTerm)
         {
-            return _tvBusiness.SearchPrograms(searchTerm).Select(p => p.ToWebProgramDetailed()).ToList();
+          return _tvBusiness.SearchPrograms(searchTerm).Select(p => p.ToWebProgramDetailed()).OrderBy(x => x.StartTime, WebSortOrder.Asc).ToList();
         }
 
         public IList<WebProgramDetailed> SearchProgramsDetailedByRange(string searchTerm, int start, int end)
         {
-            return _tvBusiness.SearchPrograms(searchTerm).Select(p => p.ToWebProgramDetailed()).TakeRange(start, end).ToList();
+          return _tvBusiness.SearchPrograms(searchTerm).Select(p => p.ToWebProgramDetailed()).TakeRange(start, end).OrderBy(x => x.StartTime, WebSortOrder.Asc).ToList();
         }
 
         public IList<WebProgramBasic> SearchProgramsBasic(string searchTerm)
