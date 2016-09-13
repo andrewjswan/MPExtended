@@ -291,6 +291,10 @@ namespace MPExtended.Services.TVAccessService.Interfaces
 
         [OperationContract]
         [WebGet(ResponseFormat = WebMessageFormat.Json)]
+        IList<WebChannelPrograms<WebProgramDetailed>> GetRadioProgramsDetailedForGroup(int groupId, DateTime startTime, DateTime endTime);
+
+        [OperationContract]
+        [WebGet(ResponseFormat = WebMessageFormat.Json)]
         WebProgramDetailed GetCurrentProgramOnChannel(int channelId);
 
         [OperationContract]

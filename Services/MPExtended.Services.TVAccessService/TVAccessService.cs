@@ -938,6 +938,21 @@ namespace MPExtended.Services.TVAccessService
             }
         }
 
+        public IList<WebChannelPrograms<WebProgramDetailed>> GetRadioProgramsDetailedForGroup(int groupId, DateTime startTime, DateTime endTime)
+        {
+          using (var cache = WebProgramExtensionMethods.CacheSchedules())
+          {
+            return _tvBusiness.GetRadioGuideChannelsForGroup(groupId)
+                .Select(ch => new WebChannelPrograms<WebProgramDetailed>()
+                {
+                  ChannelId = ch.IdChannel,
+                  Programs = _tvBusiness.GetPrograms(ch, startTime, endTime).Select(p => p.ToWebProgramDetailed()).ToList()
+                })
+                .ToList();
+          }
+        }
+
+
         public WebProgramDetailed GetCurrentProgramOnChannel(int channelId)
         {
             return Channel.Retrieve(channelId).CurrentProgram.ToWebProgramDetailed();
