@@ -790,6 +790,26 @@ namespace MPExtended.Services.TVAccessService
         #endregion
 
         #region Recordings
+        public WebBoolResult SetStopTime(int programId, int stopTime)
+        {
+          bool result = false;
+          try
+          {
+            Recording p = Recording.Retrieve(programId);
+
+            p.StopTime = stopTime;
+            p.Persist();
+
+            result = true;
+          }
+          catch (Exception e)
+          {
+            Log.Error("SetStopTime id {0}", programId);
+            Log.Error(e.Message);
+          }
+          return result;
+        }
+
         public WebIntResult GetRecordingCount()
         {
             return Recording.ListAll().Count;

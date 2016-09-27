@@ -122,6 +122,10 @@ namespace MPExtended.Services.TVAccessService.Interfaces
         #region Recordings
         [OperationContract]
         [WebGet(ResponseFormat = WebMessageFormat.Json)]
+        WebBoolResult SetStopTime(int programId, int stopTime);
+
+        [OperationContract]
+        [WebGet(ResponseFormat = WebMessageFormat.Json)]
         WebIntResult GetRecordingCount();
 
         [OperationContract]
